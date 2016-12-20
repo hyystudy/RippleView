@@ -34,6 +34,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -53,9 +54,10 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 public class MaterialRippleLayout extends FrameLayout {
 
+    private static final String TAG = "MaterialRippleLayout";
     private static final int DEFAULT_DURATION = 350;
     private static final int DEFAULT_FADE_DURATION = 75;
-    private static final float DEFAULT_DIAMETER_DP = 35;
+    private static final float DEFAULT_DIAMETER_DP = 25;
     private static final float DEFAULT_ALPHA = 0.2f;
     private static final int DEFAULT_COLOR = Color.BLACK;
     private static final int DEFAULT_BACKGROUND = Color.TRANSPARENT;
@@ -65,11 +67,14 @@ public class MaterialRippleLayout extends FrameLayout {
     private static final boolean DEFAULT_SEARCH_ADAPTER = false;
     private static final boolean DEFAULT_RIPPLE_OVERLAY = false;
     private static final int DEFAULT_ROUNDED_CORNERS = 0;
+    private static final int RIPPLE_TYPE_ROUND = 0;
+    private static final int RIPPLE_TYPE_RECT = 1;
 
     private static final int FADE_EXTRA_DELAY = 50;
     private static final long HOVER_DURATION = 500;
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Rect bounds = new Rect();
 
     private int rippleColor;
@@ -84,6 +89,7 @@ public class MaterialRippleLayout extends FrameLayout {
     private Drawable rippleBackground;
     private boolean rippleInAdapter;
     private float rippleRoundedCorners;
+    private int rippleType;
 
     private float radius;
 
@@ -140,11 +146,13 @@ public class MaterialRippleLayout extends FrameLayout {
         ripplePersistent = a.getBoolean(R.styleable.MaterialRippleLayout_mrl_ripplePersistent, DEFAULT_PERSISTENT);
         rippleInAdapter = a.getBoolean(R.styleable.MaterialRippleLayout_mrl_rippleInAdapter, DEFAULT_SEARCH_ADAPTER);
         rippleRoundedCorners = a.getDimensionPixelSize(R.styleable.MaterialRippleLayout_mrl_rippleRoundedCorners, DEFAULT_ROUNDED_CORNERS);
-
+        rippleType = a.getInt(R.styleable.MaterialRippleLayout_mrl_ripple_type, RIPPLE_TYPE_RECT);
         a.recycle();
 
         paint.setColor(rippleColor);
         paint.setAlpha(rippleAlpha);
+        bgPaint.setAlpha(rippleAlpha/2);
+        bgPaint.setColor(rippleColor);
 
         enableClipPathSupportIfNecessary();
     }
@@ -312,11 +320,13 @@ public class MaterialRippleLayout extends FrameLayout {
         if (hoverAnimator != null) {
             hoverAnimator.cancel();
         }
+
         final float radius = (float) (Math.sqrt(Math.pow(getWidth(), 2) + Math.pow(getHeight(), 2)) * 1.2f);
         hoverAnimator = ObjectAnimator.ofFloat(this, radiusProperty, rippleDiameter, radius)
                 .setDuration(HOVER_DURATION);
         hoverAnimator.setInterpolator(new LinearInterpolator());
         hoverAnimator.start();
+
     }
 
     private void startRipple(final Runnable animationEndRunnable) {
@@ -381,8 +391,13 @@ public class MaterialRippleLayout extends FrameLayout {
         final float radiusX = halfWidth > currentCoords.x ? width - currentCoords.x : currentCoords.x;
         final float radiusY = halfHeight > currentCoords.y ? height - currentCoords.y : currentCoords.y;
 
-        //return (float) Math.sqrt(Math.pow(radiusX, 2) + Math.pow(radiusY, 2)) * 1.2f;
-        return 100;
+        if (rippleType == RIPPLE_TYPE_RECT){
+            return (float) Math.sqrt(Math.pow(radiusX, 2) + Math.pow(radiusY, 2)) * 1.2f;
+        } else {
+            return Math.min(halfHeight, halfWidth);
+        }
+
+
     }
 
     private boolean isInScrollingContainer() {
@@ -474,6 +489,7 @@ public class MaterialRippleLayout extends FrameLayout {
      */
     @Override
     public void draw(Canvas canvas) {
+        super.draw(canvas);
         final boolean positionChanged = adapterPositionChanged();
         if (rippleOverlay) {
             if (!positionChanged) {
@@ -487,15 +503,25 @@ public class MaterialRippleLayout extends FrameLayout {
                     clipPath.addRoundRect(rect, rippleRoundedCorners, rippleRoundedCorners, Path.Direction.CW);
                     canvas.clipPath(clipPath);
                 }
-                if (radius > getEndRadius()) radius = getEndRadius();
-                canvas.drawCircle(currentCoords.x, currentCoords.y, radius, paint);
+                if (rippleType == RIPPLE_TYPE_RECT) {
+                    Log.d(TAG, "draw: radius --->" + radius);
+                    canvas.drawCircle(currentCoords.x, currentCoords.y, radius, paint);
+                } else {
+                    if (radius > getEndRadius()) radius = getEndRadius();
+                    canvas.drawCircle(getWidth()/ 2, getHeight()/2, radius, paint);
+                }
             }
         } else {
             if (!positionChanged) {
                 rippleBackground.draw(canvas);
-                if (radius > getEndRadius()) radius = getEndRadius();
-                canvas.drawCircle(currentCoords.x, currentCoords.y, radius, paint);
+                if (rippleType == RIPPLE_TYPE_RECT) {
+                        canvas.drawCircle(currentCoords.x, currentCoords.y, radius, paint);
+                } else {
+                    if (radius > getEndRadius()) radius = getEndRadius();
+                    canvas.drawCircle(getWidth()/ 2, getHeight()/2, radius, paint);
+                }
             }
+
             super.draw(canvas);
         }
     }
@@ -545,6 +571,7 @@ public class MaterialRippleLayout extends FrameLayout {
 
     public void setRippleAlpha(Integer rippleAlpha) {
         paint.setAlpha(rippleAlpha);
+        bgPaint.setAlpha(rippleAlpha/2);
         invalidate();
     }
 
@@ -555,6 +582,8 @@ public class MaterialRippleLayout extends FrameLayout {
         this.rippleColor = rippleColor;
         paint.setColor(rippleColor);
         paint.setAlpha(rippleAlpha);
+        paint.setColor(rippleColor);
+        bgPaint.setAlpha(rippleAlpha/2);
         invalidate();
     }
 

@@ -14,25 +14,35 @@
     tools:showIn="@layout/activity_main">
 
     <com.example.mylibrary.MaterialRippleLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true">
+        android:layout_centerInParent="true"
+        app:mrl_rippleOverlay="true"
+        app:mrl_ripple_type="type_rect"
+        app:mrl_rippleColor="@android:color/black"
+        app:mrl_rippleAlpha="0.2">
+
         <TextView
-            android:layout_width="wrap_content"
+            android:id="@+id/text"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/activity_horizontal_margin"
-            android:text="Hello World!" />
+            android:text="Hello World!"
+            android:gravity="center"
+            android:background="@drawable/selector"/>
     </com.example.mylibrary.MaterialRippleLayout>
 
     <com.example.mylibrary.MaterialRippleLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        app:mrl_ripple_type="type_round"
+        app:mrl_rippleDimension="0dp">
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/activity_horizontal_margin"
-            android:src="@mipmap/ic_launcher"
+            android:src="@drawable/ic_more_vert_black_24dp"
             android:id="@+id/imageView" />
     </com.example.mylibrary.MaterialRippleLayout>
 
